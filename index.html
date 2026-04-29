@@ -120,6 +120,32 @@
     .spanish-meaning { font-size: 15px; color: var(--ink); margin-top: 4px; font-weight: 600; }
     .spanish-pron { font-size: 13px; color: var(--muted); margin-top: 3px; }
     .spanish-date { font-size: 12px; color: var(--muted); background: rgba(255,255,255,.7); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .scripts-section { margin: -4px 0 18px; }
+    .scripts-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .scripts-head h3 { margin: 0; font-size: 16px; }
+    .scripts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px; }
+    .script-card {
+      background: rgba(255,255,255,.85);
+      border: 1px solid rgba(229,231,235,.9);
+      border-radius: 14px;
+      padding: 12px 14px;
+      box-shadow: 0 6px 14px rgba(15,23,42,.05);
+      cursor: pointer;
+      transition: .15s ease;
+      position: relative;
+    }
+    .script-card:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(15,23,42,.1); border-color: var(--brand); }
+    .script-card:active { transform: scale(.99); }
+    .script-category { font-size: 11px; font-weight: 700; color: var(--brand); background: rgba(37,99,235,.08); padding: 3px 8px; border-radius: 999px; display: inline-block; margin-bottom: 6px; }
+    .script-title { font-size: 14px; font-weight: 800; margin-bottom: 6px; color: var(--ink); }
+    .script-content { font-size: 13px; color: #374151; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .script-toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(60px);
+      background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 12px;
+      font-size: 14px; font-weight: 600; box-shadow: 0 12px 30px rgba(15,23,42,.2);
+      opacity: 0; transition: .35s ease; z-index: 20; pointer-events: none;
+    }
+    .script-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .board {
       display: grid;
       grid-template-columns: repeat(6, minmax(250px, 1fr));
@@ -225,6 +251,8 @@
 
     <section class="spanish-bar" id="spanishBar"></section>
 
+    <section class="scripts-section" id="scriptsSection"></section>
+
     <section class="filters">
       <input id="search" placeholder="搜索客户/产品/动作" oninput="render()">
       <select id="regionFilter" onchange="render()">
@@ -324,6 +352,7 @@ function render(){
   renderSummary();
   renderTimezones();
   renderSpanish();
+  renderScripts();
   const data=filteredTasks();
   const board=document.getElementById('board');
   board.innerHTML='';
@@ -403,6 +432,39 @@ function renderSpanish(){
     </div>
     <div class="spanish-date">${d.getMonth()+1}月${d.getDate()}日 · 每日一句</div>
   `;
+}
+const salesScripts = [
+  {category:'产品话术', title:'醋酸家族优势（英文）', content:'We specialize in acetic acid and its derivatives — GAA, ethyl acetate, butyl acetate, vinyl acetate, and methyl acetate. This allows you to source the full acetic product family from one reliable supplier.'},
+  {category:'产品话术', title:'醋酸家族优势（西语）', content:'Nos especializamos en ácido acético glacial y sus derivados — GAA, acetato de etilo, acetato de butilo, acetato de vinilo y acetato de metilo. Esto le permite abastecer toda la familia de productos de acetato de un proveedor confiable.'},
+  {category:'议价话术', title:'强调价格竞争力', content:'Our FOB Qingdao pricing is highly competitive compared to current market levels in Mexico, especially for bulk orders above 100 MT. I would be happy to share our detailed quotation for your evaluation.'},
+  {category:'议价话术', title:'西语强调价格', content:'Nuestro precio FOB Qingdao es altamente competitivo comparado con los niveles actuales del mercado en México, especialmente para pedidos a granel superiores a 100 MT. Con gusto le envío nuestra cotización detallada para su evaluación.'},
+  {category:'跟进话术', title:'催促回复', content:'I hope you had a chance to review our previous email. Please let me know if you have any questions regarding the specifications, packaging, or pricing. I am here to assist.'},
+  {category:'跟进话术', title:'西语催促回复', content:'Espero que haya tenido oportunidad de revisar nuestro correo anterior. Por favor hágame saber si tiene alguna pregunta sobre especificaciones, empaque o precios. Estoy aquí para ayudarle.'}
+];
+function renderScripts(){
+  const el = document.getElementById('scriptsSection');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="scripts-head"><h3>💬 销售话术弹药库</h3><span style="font-size:12px;color:var(--muted)">点击卡片即可复制</span></div>
+    <div class="scripts-grid">${salesScripts.map((s,i)=>`
+      <div class="script-card" onclick="copyScript(${i})">
+        <span class="script-category">${esc(s.category)}</span>
+        <div class="script-title">${esc(s.title)}</div>
+        <div class="script-content">${esc(s.content)}</div>
+      </div>`).join('')}</div>
+    <div class="script-toast" id="scriptToast">已复制到剪贴板 ✅</div>
+  `;
+}
+function copyScript(idx){
+  const text = salesScripts[idx].content;
+  navigator.clipboard.writeText(text).then(()=>{
+    const toast = document.getElementById('scriptToast');
+    if(toast){ toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2000); }
+  }).catch(()=>{
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    const toast = document.getElementById('scriptToast');
+    if(toast){ toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'), 2000); }
+  });
 }
 function card(t){
   const el=document.createElement('div'); el.className='card'; el.draggable=true;
