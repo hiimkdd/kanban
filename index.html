@@ -256,7 +256,7 @@
     <section class="filters">
       <input id="search" placeholder="搜索客户/产品/动作" oninput="render()">
       <select id="regionFilter" onchange="render()">
-        <option value="">全部区域</option><option>墨西哥</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option>
+        <option value="">全部区域</option><option>墨西哥</option><option>哥伦比亚</option><option>秘鲁</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option>
       </select>
       <select id="priorityFilter" onchange="render()">
         <option value="">全部优先级</option><option>A</option><option>B</option><option>C</option>
@@ -289,7 +289,7 @@
       <input type="hidden" id="taskId">
       <div class="form-grid">
         <div class="field"><label>客户/对象</label><input id="client" placeholder="例如 Peroxiquimicos S.A."></div>
-        <div class="field"><label>区域</label><select id="region"><option>墨西哥</option><option>哥伦比亚</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option></select></div>
+        <div class="field"><label>区域</label><select id="region"><option>墨西哥</option><option>哥伦比亚</option><option>秘鲁</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option></select></div>
         <div class="field"><label>产品</label><input id="product" placeholder="例如 IPA/GAA/EAC"></div>
         <div class="field"><label>优先级</label><select id="priority"><option>A</option><option>B</option><option>C</option></select></div>
         <div class="field"><label>状态</label><select id="status"></select></div>
@@ -316,6 +316,7 @@ const columns = [
 const regionInfo = {
   '墨西哥': { diff: -14, zone: 'America/Mexico_City', note: '墨西哥城/克雷塔罗' },
   '哥伦比亚': { diff: -13, zone: 'America/Bogota', note: '波哥大' },
+  '秘鲁': { diff: -13, zone: 'America/Lima', note: '利马' },
   '坦桑尼亚': { diff: -5, zone: 'Africa/Dar_es_Salaam', note: '达累斯萨拉姆' },
   '泰国': { diff: -1, zone: 'Asia/Bangkok', note: '曼谷' },
   '波兰': { diff: -6, zone: 'Europe/Warsaw', note: '华沙，夏令时' },
