@@ -455,11 +455,23 @@ function generateShareLink(){
   try{
     const payload = btoa(encodeURIComponent(JSON.stringify(tasks)));
     const url = location.origin + location.pathname + '#data=' + payload;
-    navigator.clipboard.writeText(url).then(()=>{
-      alert('分享链接已复制到剪贴板！\n\n可以直接发给微信/钉钉，手机上打开就能看到完整看板。');
-    }).catch(()=>{
-      prompt('请手动复制以下链接：', url);
-    });
+    if(url.length > 8000){ alert('任务数据太多，链接过长，建议先导出备份文件发送。'); return; }
+    // 尝试生成短链接
+    fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(url))
+      .then(r=>r.text())
+      .then(short=>{
+        if(short && short.startsWith('http')){
+          navigator.clipboard.writeText(short).then(()=>{
+            alert('短链接已复制！\n\n'+short+'\n\n可以直接发给微信/钉钉。');
+          }).catch(()=>prompt('请手动复制短链接：', short));
+        }else throw new Error('shorten failed');
+      })
+      .catch(()=>{
+        // 短链接失败，回退长链接
+        navigator.clipboard.writeText(url).then(()=>{
+          alert('链接已复制（数据较多，自动缩短失败，已复制原始长链接）：\n\n'+url.slice(0,120)+'…');
+        }).catch(()=>prompt('请手动复制以下链接：', url));
+      });
   }catch(e){ alert('生成链接失败：'+e.message); }
 }
 function loadFromHash(){
