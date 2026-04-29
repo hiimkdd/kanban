@@ -451,35 +451,56 @@ function importJson(e){
   const reader=new FileReader(); reader.onload=()=>{ try{ const data=JSON.parse(reader.result); if(Array.isArray(data)){tasks=data; persist(); render(); alert('导入成功');} else alert('文件格式不对'); }catch(err){alert('导入失败：'+err.message);} };
   reader.readAsText(file); e.target.value='';
 }
-function generateShareLink(){
+async function generateShareLink(){
   try{
-    const payload = btoa(encodeURIComponent(JSON.stringify(tasks)));
-    const url = location.origin + location.pathname + '#data=' + payload;
-    if(url.length > 8000){ alert('任务数据太多，链接过长，建议先导出备份文件发送。'); return; }
-    // 尝试生成短链接
-    fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(url))
-      .then(r=>r.text())
-      .then(short=>{
-        if(short && short.startsWith('http')){
-          navigator.clipboard.writeText(short).then(()=>{
-            alert('短链接已复制！\n\n'+short+'\n\n可以直接发给微信/钉钉。');
-          }).catch(()=>prompt('请手动复制短链接：', short));
-        }else throw new Error('shorten failed');
-      })
-      .catch(()=>{
-        // 短链接失败，回退长链接
-        navigator.clipboard.writeText(url).then(()=>{
-          alert('链接已复制（数据较多，自动缩短失败，已复制原始长链接）：\n\n'+url.slice(0,120)+'…');
-        }).catch(()=>prompt('请手动复制以下链接：', url));
-      });
+    const json = JSON.stringify(tasks);
+    let payload;
+    if(typeof CompressionStream !== 'undefined'){
+      const buf = await new Response(new Blob([new TextEncoder().encode(json)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+      payload = 'z' + btoa(Array.from(new Uint8Array(buf),b=>String.fromCharCode(b)).join(''));
+    }else{
+      payload = 't' + btoa(encodeURIComponent(json));
+    }
+    const url = location.origin + location.pathname + '#d=' + payload;
+    // 优先尝试多个短链接服务
+    const shorteners = [
+      u=>fetch('https://is.gd/create.php?format=simple&url='+encodeURIComponent(u)).then(r=>r.text()),
+      u=>fetch('https://v.gd/create.php?format=simple&url='+encodeURIComponent(u)).then(r=>r.text()),
+      u=>fetch('https://tinyurl.com/api-create.php?url='+encodeURIComponent(u)).then(r=>r.text())
+    ];
+    let short = null;
+    for(const fn of shorteners){
+      try{
+        const res = await fn(url);
+        if(res && res.startsWith('http')){ short = res; break; }
+      }catch(e){}
+    }
+    if(short){
+      navigator.clipboard.writeText(short).then(()=>alert('短链接已复制！\n\n'+short+'\n\n微信/钉钉直接粘贴即可。')).catch(()=>prompt('请手动复制：',short));
+    }else if(url.length < 4000){
+      navigator.clipboard.writeText(url).then(()=>alert('链接已复制（短链接服务暂不可用，已复制压缩后的链接）：\n\n'+url.slice(0,100)+'…')).catch(()=>prompt('请手动复制：',url));
+    }else{
+      alert('任务数据较多，建议：\n1. 点击「导出备份」把JSON文件发微信；\n2. 或删除一些「已完成」的旧任务后再分享。');
+    }
   }catch(e){ alert('生成链接失败：'+e.message); }
 }
-function loadFromHash(){
+async function loadFromHash(){
   const hash = location.hash;
-  if(hash.startsWith('#data=')){
+  if(hash.startsWith('#d=')){
     try{
-      const payload = hash.slice(6);
-      const data = JSON.parse(decodeURIComponent(atob(payload)));
+      const payload = hash.slice(3);
+      let json;
+      if(payload.startsWith('z')){
+        const bytes = new Uint8Array(atob(payload.slice(1)).length);
+        const raw = atob(payload.slice(1));
+        for(let i=0;i<bytes.length;i++) bytes[i]=raw.charCodeAt(i);
+        json = await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+      }else if(payload.startsWith('t')){
+        json = decodeURIComponent(atob(payload.slice(1)));
+      }else{
+        json = decodeURIComponent(atob(payload));
+      }
+      const data = JSON.parse(json);
       if(Array.isArray(data) && data.length>0){
         if(confirm('检测到分享链接中的看板数据，是否加载？\n（会覆盖当前浏览器中的本地数据）')){
           tasks = data;
@@ -487,13 +508,11 @@ function loadFromHash(){
           location.hash = '';
         }
       }
-    }catch(e){ console.error('分享链接解析失败', e); }
+    }catch(e){ console.error('分享链接解析失败', e); alert('分享链接解析失败，可能数据损坏或浏览器不支持压缩格式。'); }
   }
 }
 function resetBoard(){ if(confirm('会恢复示例任务，并清空当前浏览器里的看板数据，确定吗？')){tasks=seedTasks; persist(); render();} }
-loadFromHash();
-render();
-setInterval(renderTimezones, 1000);
+(async()=>{ await loadFromHash(); render(); setInterval(renderTimezones, 1000); })();
 </script>
 </body>
 </html>
