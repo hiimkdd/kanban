@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>凯迪外贸待办看板</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #2563eb;
+      --brand-dark: #1d4ed8;
+      --green: #059669;
+      --amber: #d97706;
+      --red: #dc2626;
+      --purple: #7c3aed;
+      --shadow: 0 14px 32px rgba(15, 23, 42, .08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #eef4ff 0%, #f8fafc 42%, #fff7ed 100%);
+      color: var(--ink);
+    }
+    header {
+      padding: 26px 30px 18px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: .5px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+    button, select, input, textarea {
+      font-family: inherit;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--ink);
+    }
+    button {
+      cursor: pointer;
+      padding: 10px 14px;
+      font-weight: 650;
+      transition: .18s ease;
+    }
+    button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(15,23,42,.08); }
+    .primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .primary:hover { background: var(--brand-dark); }
+    .danger { color: var(--red); }
+    main { padding: 0 24px 30px; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .metric {
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(229,231,235,.9);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .metric .label { color: var(--muted); font-size: 13px; }
+    .metric .value { margin-top: 6px; font-size: 26px; font-weight: 800; }
+    .timezones {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: -4px 0 18px;
+    }
+    .tz-card {
+      width: 118px;
+      background: rgba(255,255,255,.78);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 8px 10px;
+      box-shadow: 0 6px 14px rgba(15,23,42,.05);
+    }
+    .tz-region { font-weight: 800; font-size: 12px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tz-time { margin-top: 4px; font-size: 20px; font-weight: 900; letter-spacing: .5px; }
+    .filters {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 0 0 18px;
+      background: rgba(255,255,255,.78);
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 22px rgba(15,23,42,.05);
+    }
+    .filters input, .filters select { padding: 10px 12px; min-width: 150px; }
+    .spanish-bar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin: -4px 0 18px;
+      background: linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%);
+      border: 1px solid rgba(255,255,255,.6);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      flex-wrap: wrap;
+    }
+    .spanish-flag { font-size: 28px; line-height: 1; flex-shrink: 0; }
+    .spanish-body { flex: 1; min-width: 200px; }
+    .spanish-phrase { font-size: 22px; font-weight: 800; color: #c62828; letter-spacing: .3px; }
+    .spanish-meaning { font-size: 15px; color: var(--ink); margin-top: 4px; font-weight: 600; }
+    .spanish-pron { font-size: 13px; color: var(--muted); margin-top: 3px; }
+    .spanish-date { font-size: 12px; color: var(--muted); background: rgba(255,255,255,.7); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(250px, 1fr));
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+    }
+    .column {
+      min-height: 540px;
+      background: rgba(255,255,255,.75);
+      border: 1px solid rgba(229,231,235,.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+    }
+    .col-head {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .col-title { font-weight: 800; }
+    .count { color: var(--muted); background: #f3f4f6; padding: 3px 8px; border-radius: 999px; font-size: 12px; }
+    .dropzone { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .dropzone.dragover { background: rgba(37, 99, 235, .06); outline: 2px dashed rgba(37,99,235,.25); outline-offset: -8px; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      box-shadow: 0 8px 18px rgba(15,23,42,.06);
+      cursor: grab;
+    }
+    .card:active { cursor: grabbing; }
+    .card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .client { font-weight: 800; line-height: 1.3; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0; }
+    .tag { font-size: 12px; border-radius: 999px; padding: 4px 7px; background: #f3f4f6; color: #374151; }
+    .p-A { background:#fee2e2; color:#991b1b; }
+    .p-B { background:#fef3c7; color:#92400e; }
+    .p-C { background:#e0f2fe; color:#075985; }
+    .region { background:#ede9fe; color:#5b21b6; }
+    .product { background:#dcfce7; color:#166534; }
+    .action { color: #374151; line-height: 1.55; font-size: 13px; white-space: pre-wrap; }
+    .meta { margin-top: 9px; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 8px; }
+    .card-actions { display:flex; gap:6px; margin-top:10px; }
+    .small { padding: 6px 8px; border-radius: 10px; font-size: 12px; }
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.35); display: none; align-items: center; justify-content: center; padding: 18px; z-index: 10; }
+    .modal {
+      width: min(760px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(15,23,42,.22);
+      padding: 20px;
+    }
+    .modal h2 { margin: 0 0 14px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    label { font-size: 13px; color: #374151; font-weight: 700; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    input, select, textarea { padding: 10px 12px; width: 100%; }
+    textarea { min-height: 86px; resize: vertical; }
+    .full { grid-column: 1 / -1; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .guide {
+      margin-top: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .guide h2 { margin-top: 0; }
+    .guide li { margin: 7px 0; }
+    @media (max-width: 1200px) { .summary { grid-template-columns: repeat(2, 1fr); } .board { grid-template-columns: repeat(6, 280px); } }
+    @media (max-width: 700px) { header { padding: 20px 16px; } main { padding: 0 12px 20px; } .summary { grid-template-columns: 1fr; } .tz-card { width: calc(50% - 4px); } .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>凯迪外贸待办看板</h1>
+      <div class="subtitle">聚焦墨西哥开发，兼顾高意向客户跟进、报价、文件和周报素材。数据保存在当前浏览器本地。</div>
+    </div>
+    <div class="toolbar">
+      <button class="primary" onclick="openModal()">新增任务</button>
+      <button onclick="addTemplate('follow')">加 A 类跟进</button>
+      <button onclick="addTemplate('quote')">加报价任务</button>
+      <button onclick="exportJson()">导出备份</button>
+      <button onclick="document.getElementById('importFile').click()">导入备份</button>
+      <input id="importFile" type="file" accept="application/json" hidden onchange="importJson(event)">
+      <button class="danger" onclick="resetBoard()">重置示例</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary" id="summary"></section>
+    <section class="timezones" id="timezones"></section>
+
+    <section class="spanish-bar" id="spanishBar"></section>
+
+    <section class="filters">
+      <input id="search" placeholder="搜索客户/产品/动作" oninput="render()">
+      <select id="regionFilter" onchange="render()">
+        <option value="">全部区域</option><option>墨西哥</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option>
+      </select>
+      <select id="priorityFilter" onchange="render()">
+        <option value="">全部优先级</option><option>A</option><option>B</option><option>C</option>
+      </select>
+      <select id="productFilter" onchange="render()">
+        <option value="">全部产品</option><option>IPA</option><option>GAA</option><option>EAC/EA</option><option>VAM</option><option>Acetone</option><option>MEK</option><option>其他</option>
+      </select>
+      <button onclick="clearFilters()">清空筛选</button>
+    </section>
+
+    <section class="board" id="board"></section>
+
+    <section class="guide">
+      <h2>使用方法</h2>
+      <ol>
+        <li><b>每天早上：</b>先看「今日必做」和「等待回复」，选 3-5 件最重要的推进。</li>
+        <li><b>客户有反馈：</b>点卡片的「编辑」，记录客户原话、目标价、下一步动作，再拖到对应阶段。</li>
+        <li><b>客户明确询价：</b>放到「报价/文件」，补齐产品、数量、港口、付款方式、交期、需要的 COA/MSDS/证书。</li>
+        <li><b>发完邮件或 WhatsApp：</b>把卡片拖到「等待回复」，设置下一次跟进日期。</li>
+        <li><b>每周五写周报：</b>查看「已完成」和各卡片备注，把本周客户开发、报价、问题复盘直接整理成周报。</li>
+        <li><b>重要习惯：</b>不要把所有客户都当 A 类；A 类必须有明确产品、数量、港口或价格反馈。</li>
+        <li><b>时差说明：</b>墨西哥按墨西哥城/克雷塔罗，哥伦比亚按波哥大，巴西按圣保罗，波兰当前按夏令时估算；具体客户城市如不同，电联前再单独确认。</li>
+      </ol>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h2 id="modalTitle">新增任务</h2>
+      <input type="hidden" id="taskId">
+      <div class="form-grid">
+        <div class="field"><label>客户/对象</label><input id="client" placeholder="例如 Peroxiquimicos S.A."></div>
+        <div class="field"><label>区域</label><select id="region"><option>墨西哥</option><option>哥伦比亚</option><option>泰国</option><option>波兰</option><option>印度</option><option>巴西</option><option>其他</option></select></div>
+        <div class="field"><label>产品</label><input id="product" placeholder="例如 IPA/GAA/EAC"></div>
+        <div class="field"><label>优先级</label><select id="priority"><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="field"><label>状态</label><select id="status"></select></div>
+        <div class="field"><label>下次跟进</label><input id="due" type="date"></div>
+        <div class="field full"><label>下一步动作</label><textarea id="nextAction" placeholder="例如：今晚电联，确认采购负责人 WhatsApp；补发西语双语开发信"></textarea></div>
+        <div class="field full"><label>备注/客户反馈</label><textarea id="notes" placeholder="记录目标价、付款要求、报价、风险点、周报素材"></textarea></div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="closeModal()">取消</button>
+        <button class="primary" onclick="saveTask()">保存</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const columns = [
+  { id:'today', title:'今日必做' },
+  { id:'develop', title:'客户开发池' },
+  { id:'follow', title:'客户跟进' },
+  { id:'quote', title:'报价/文件' },
+  { id:'waiting', title:'等待回复' },
+  { id:'done', title:'已完成/复盘确认' }
+];
+const regionInfo = {
+  '墨西哥': { diff: -14, zone: 'America/Mexico_City', note: '墨西哥城/克雷塔罗' },
+  '哥伦比亚': { diff: -13, zone: 'America/Bogota', note: '波哥大' },
+  '坦桑尼亚': { diff: -5, zone: 'Africa/Dar_es_Salaam', note: '达累斯萨拉姆' },
+  '泰国': { diff: -1, zone: 'Asia/Bangkok', note: '曼谷' },
+  '波兰': { diff: -6, zone: 'Europe/Warsaw', note: '华沙，夏令时' },
+  '印度': { diff: -2.5, zone: 'Asia/Kolkata', note: '新德里' },
+  '巴西': { diff: -11, zone: 'America/Sao_Paulo', note: '圣保罗' },
+  '其他': { diff: 0, zone: 'Asia/Shanghai', note: '需单独确认' }
+};
+const seedTasks = [
+  {client:'Peroxiquimicos S.A.', region:'墨西哥', product:'GAA', priority:'A', status:'today', due:today(), nextAction:'今晚电联，确认采购/销售邮箱和 WhatsApp；强调 GAA 价格优势。', notes:'墨西哥本土化学品分销企业，对冰醋酸有稳定进口需求，是当前重点线索。'},
+  {client:'Quimica Lamberti de Mexico', region:'墨西哥', product:'IPA/GAA/EAC', priority:'A', status:'follow', due:today(1), nextAction:'继续电联墨西哥分公司；如无反馈，跟进意大利总部转达。', notes:'已发送双语开发信；集团内部供应较多，要先找到真实采购入口。'},
+  {client:'QuimiNet 需求帖', region:'墨西哥', product:'IPA', priority:'A', status:'develop', due:today(), nextAction:'筛选 IPA 20 吨以上需求帖，逐个评论/私信，并转 WhatsApp。', notes:'本地化平台，需求多但小量较多，需要筛选真实需求。'},
+  {client:'Galvanoquimica Mexicana', region:'墨西哥', product:'工业化学品', priority:'B', status:'follow', due:today(1), nextAction:'晚上电联仓库/分布电话，确认是否能转采购。', notes:'电镀与表面处理化学品服务商，先建联，不作为最高优先级。'},
+  {client:'PLUS Sp. z o.o.', region:'波兰', product:'Acetone/IPA', priority:'B', status:'waiting', due:today(2), nextAction:'继续沟通付款条款，原则上不接受到港自检后 90 天信用证。', notes:'100MT 丙酮 + 100MT IPA；付款要求风险较高。'},
+  {client:'Ultra Chemical Works', region:'印度', product:'IPA/BAC/MAC/Acetone', priority:'B', status:'waiting', due:today(2), nextAction:'确认客户是否能提供更低 CRIA/PVOC 渠道；再决定最终报价口径。', notes:'CRIA/PVOC 文件费差异较大，必须先核实。'},
+  {client:'Salt Seven (Thailand)', region:'泰国', product:'IPA/MEK/Toluene/EA', priority:'B', status:'waiting', due:today(3), nextAction:'低频维护，等客户对单品柜/目标价反馈。', notes:'客户曾从混装需求转为单产品单柜询价，注意管制和混装风险。'},
+  {client:'United Raw Material', region:'坦桑尼亚', product:'Toluene', priority:'A', status:'waiting', due:today(1), nextAction:'等待客户反馈；明天跟进确认价格是否可接受、目标价、付款方式和预计下单时间。', notes:'已报价：Toluene 90MT，180kg/drum，140drums/40 DG，CIF Dar Es Salaam, Tanzania，1360 USD/MT，报价有效期 2026.4.28。'},
+  {client:'周报素材', region:'其他', product:'工作复盘', priority:'A', status:'done', due:today(4), nextAction:'周五整理：墨西哥聚焦、QuimiNet、重点客户电联、报价风险、付款条款风险。', notes:'写周报时从已完成和等待回复中提炼。'}
+].map((t,i)=>({...t, id: 'seed-' + i, createdAt: new Date().toISOString()}));
+let tasks = JSON.parse(localStorage.getItem('calebKanbanTasks') || 'null') || seedTasks;
+function today(add=0){ const d=new Date(); d.setDate(d.getDate()+add); return d.toISOString().slice(0,10); }
+function persist(){ localStorage.setItem('calebKanbanTasks', JSON.stringify(tasks)); }
+function clearFilters(){ ['search','regionFilter','priorityFilter','productFilter'].forEach(id=>document.getElementById(id).value=''); render(); }
+function filteredTasks(){
+  const q=document.getElementById('search').value.trim().toLowerCase();
+  const r=document.getElementById('regionFilter').value;
+  const p=document.getElementById('priorityFilter').value;
+  const prod=document.getElementById('productFilter').value;
+  return tasks.filter(t=>{
+    const blob=(t.client+' '+t.region+' '+t.product+' '+t.nextAction+' '+t.notes).toLowerCase();
+    return (!q || blob.includes(q)) && (!r || t.region===r) && (!p || t.priority===p) && (!prod || (t.product||'').includes(prod));
+  });
+}
+function render(){
+  renderSummary();
+  renderTimezones();
+  renderSpanish();
+  const data=filteredTasks();
+  const board=document.getElementById('board');
+  board.innerHTML='';
+  columns.forEach(col=>{
+    const colTasks=data.filter(t=>t.status===col.id);
+    const el=document.createElement('div'); el.className='column';
+    el.innerHTML=`<div class="col-head"><div class="col-title">${col.title}</div><div class="count">${colTasks.length}</div></div><div class="dropzone" data-status="${col.id}"></div>`;
+    const zone=el.querySelector('.dropzone');
+    zone.addEventListener('dragover', e=>{e.preventDefault(); zone.classList.add('dragover');});
+    zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e=>{e.preventDefault(); zone.classList.remove('dragover'); moveTask(e.dataTransfer.getData('text/plain'), col.id);});
+    colTasks.forEach(t=>zone.appendChild(card(t)));
+    board.appendChild(el);
+  });
+}
+function renderSummary(){
+  const dueToday=tasks.filter(t=>t.due && t.due<=today() && t.status!=='done').length;
+  const a=tasks.filter(t=>t.priority==='A' && t.status!=='done').length;
+  const mx=tasks.filter(t=>t.region==='墨西哥' && t.status!=='done').length;
+  const co=tasks.filter(t=>t.region==='哥伦比亚' && t.status!=='done').length;
+  const waiting=tasks.filter(t=>t.status==='waiting').length;
+  const done=tasks.filter(t=>t.status==='done').length;
+  document.getElementById('summary').innerHTML = [
+    ['今日到期', dueToday], ['A类重点', a], ['墨西哥线索', mx], ['哥伦比亚线索', co], ['等待回复', waiting], ['已完成', done]
+  ].map(([label,value])=>`<div class="metric"><div class="label">${label}</div><div class="value">${value}</div></div>`).join('');
+}
+function renderTimezones(){
+  document.getElementById('timezones').innerHTML = Object.entries(regionInfo).filter(([r])=>r!=='其他').map(([region, info])=>`
+    <div class="tz-card" title="${regionDiffLabel(region)}北京时间">
+      <div class="tz-region">${region}｜${info.note}</div>
+      <div class="tz-time">${regionLocalTime(region)}</div>
+    </div>`).join('');
+}
+function regionLocalTime(region){
+  const info=regionInfo[region] || regionInfo['其他'];
+  return new Intl.DateTimeFormat('zh-CN',{timeZone:info.zone,hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date());
+}
+function regionDiffLabel(region){
+  const diff=(regionInfo[region] || regionInfo['其他']).diff;
+  if(diff===0) return '同';
+  const abs=Math.abs(diff);
+  const text=Number.isInteger(abs) ? abs + '小时' : Math.floor(abs) + '小时30分';
+  return diff<0 ? '比上海慢' + text + '，' : '比上海快' + text + '，';
+}
+const spanishPhrases = [
+  {phrase:'Buenos días', meaning:'早上好', pron:'布埃诺斯 · 迪亚斯'},
+  {phrase:'Mucho gusto', meaning:'很高兴认识您', pron:'穆乔 · 古斯托'},
+  {phrase:'¿Cómo está?', meaning:'您好吗？', pron:'口莫 · 埃斯塔'},
+  {phrase:'Gracias por su tiempo', meaning:'感谢您的时间', pron:'格拉西亚斯 · 波尔 · 苏 · 蒂恩波'},
+  {phrase:'¿Cuál es su mejor precio?', meaning:'您的最优价格是多少？', pron:'库阿尔 · 埃斯 · 苏 · 梅霍尔 · 普雷西奥'},
+  {phrase:'Podemos negociar', meaning:'我们可以谈判', pron:'波德莫斯 · 内戈西亚尔'},
+  {phrase:'El precio es FOB Qingdao', meaning:'价格是青岛港船上交货价', pron:'埃尔 · 普雷西奥 · 埃斯 FOB 青岛'},
+  {phrase:'¿Cuándo puede enviar la muestra?', meaning:'您什么时候可以寄样品？', pron:'库安多 · 普埃德 · 恩维亚尔 · 拉 · 穆埃斯特拉'},
+  {phrase:'¿Tiene stock disponible?', meaning:'有现货吗？', pron:'蒂埃内 · 斯托克 · 迪斯波尼布勒'},
+  {phrase:'La calidad es muy buena', meaning:'质量非常好', pron:'拉 · 卡利达德 · 埃斯 · 穆伊 · 布埃纳'},
+  {phrase:'¿Cuál es el tiempo de entrega?', meaning:'交货期是多久？', pron:'库阿尔 · 埃斯 · 埃尔 · 蒂恩波 · 德 · 恩特雷加'},
+  {phrase:'Somos fabricante', meaning:'我们是厂家', pron:'索莫斯 · 法布里坎特'},
+  {phrase:'Confirmo el pedido', meaning:'我确认订单', pron:'孔菲尔莫 · 埃尔 · 佩迪多'},
+  {phrase:'Espero su respuesta', meaning:'期待您的回复', pron:'埃斯佩罗 · 苏 · 雷斯普埃斯塔'},
+  {phrase:'¿Podría darme un descuento?', meaning:'能给我打折吗？', pron:'波德里亚 · 达尔梅 · 翁 · 德斯昆托'},
+  {phrase:'El pago es por carta de crédito', meaning:'付款方式是信用证', pron:'埃尔 · 帕戈 · 埃斯 · 波尔 · 卡尔塔 · 德 · 克雷迪托'},
+  {phrase:'¿Puede enviarme la especificación?', meaning:'能发给我规格书吗？', pron:'普埃德 · 恩维亚尔梅 · 拉 · 埃斯佩西菲卡西翁'},
+  {phrase:'Trabajemos juntos', meaning:'让我们一起合作', pron:'特拉巴赫莫斯 · 洪托斯'},
+  {phrase:'Saludos cordiales', meaning:'诚挚的问候（邮件结尾）', pron:'萨卢多斯 · 科尔迪亚莱斯'},
+  {phrase:'Hasta pronto', meaning:'回头见', pron:'阿斯塔 · 普龙托'}
+];
+function renderSpanish(){
+  const d=new Date();
+  const idx=d.getDate()%spanishPhrases.length;
+  const s=spanishPhrases[idx];
+  document.getElementById('spanishBar').innerHTML=`
+    <div class="spanish-flag">🇪🇸</div>
+    <div class="spanish-body">
+      <div class="spanish-phrase">${esc(s.phrase)}</div>
+      <div class="spanish-meaning">${esc(s.meaning)}</div>
+      <div class="spanish-pron">${esc(s.pron)}</div>
+    </div>
+    <div class="spanish-date">${d.getMonth()+1}月${d.getDate()}日 · 每日一句</div>
+  `;
+}
+function card(t){
+  const el=document.createElement('div'); el.className='card'; el.draggable=true;
+  el.addEventListener('dragstart', e=>e.dataTransfer.setData('text/plain', t.id));
+  el.innerHTML=`
+    <div class="card-top"><div class="client">${esc(t.client)}</div><span class="tag p-${t.priority}">${t.priority}类</span></div>
+    <div class="tag-row"><span class="tag region">${esc(t.region)}</span><span class="tag product">${esc(t.product||'未填产品')}</span></div>
+    <div class="action">${esc(t.nextAction||'未填写下一步动作')}</div>
+    ${t.notes ? `<div class="action" style="margin-top:8px;color:#4b5563">备注：${esc(t.notes)}</div>` : ''}
+    <div class="meta"><span>跟进：${t.due || '未定'}</span><span>${isOverdue(t) ? '已到期' : ''}</span></div>
+    <div class="card-actions"><button class="small" onclick="editTask('${t.id}')">编辑</button><button class="small" onclick="duplicateTask('${t.id}')">复制</button><button class="small danger" onclick="deleteTask('${t.id}')">删除</button></div>`;
+  return el;
+}
+function isOverdue(t){ return t.due && t.due<=today() && t.status!=='done'; }
+function esc(s){ return String(s||'').replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function moveTask(id,status){ const t=tasks.find(x=>x.id===id); if(t){t.status=status; persist(); render();} }
+function openModal(task){
+  document.getElementById('modalBackdrop').style.display='flex';
+  document.getElementById('modalTitle').textContent=task?'编辑任务':'新增任务';
+  const status=document.getElementById('status'); status.innerHTML=columns.map(c=>`<option value="${c.id}">${c.title}</option>`).join('');
+  const t=task||{id:'',client:'',region:'墨西哥',product:'IPA/GAA/EAC',priority:'B',status:'today',due:today(),nextAction:'',notes:''};
+  ['taskId','client','region','product','priority','status','due','nextAction','notes'].forEach(id=>document.getElementById(id).value = id==='taskId'?t.id:(t[id]||''));
+}
+function closeModal(){ document.getElementById('modalBackdrop').style.display='none'; }
+function saveTask(){
+  const id=document.getElementById('taskId').value || ('task-' + Date.now());
+  const t={ id, client:v('client')||'未命名客户', region:v('region'), product:v('product'), priority:v('priority'), status:v('status'), due:v('due'), nextAction:v('nextAction'), notes:v('notes'), updatedAt:new Date().toISOString() };
+  const idx=tasks.findIndex(x=>x.id===id); if(idx>=0) tasks[idx]={...tasks[idx],...t}; else tasks.unshift({...t,createdAt:new Date().toISOString()});
+  persist(); closeModal(); render();
+}
+function v(id){ return document.getElementById(id).value.trim(); }
+function editTask(id){ openModal(tasks.find(t=>t.id===id)); }
+function deleteTask(id){ if(confirm('确定删除这条任务吗？')){ tasks=tasks.filter(t=>t.id!==id); persist(); render(); } }
+function duplicateTask(id){ const t=tasks.find(x=>x.id===id); if(t){tasks.unshift({...t,id:'task-'+Date.now(),client:t.client+'（复制）'}); persist(); render();} }
+function addTemplate(type){
+  const base = type==='quote' ? {client:'新报价任务',product:'IPA/GAA/EAC',priority:'A',status:'quote',nextAction:'确认产品、数量、目的港、包装、付款方式、交期；核算 FOB/CFR/CIF；准备 COA/MSDS/报价单。',notes:'报价有效期建议 1-2 天；所有价格以当日仓库和船期为准。'} : {client:'A类客户跟进',product:'IPA/GAA/EAC',priority:'A',status:'today',nextAction:'WhatsApp/电话跟进：确认目标价、月需求、目的港、采购周期和决策人。',notes:'每次跟进都给新信息，不只问“看了吗”。'};
+  tasks.unshift({id:'task-'+Date.now(),region:'墨西哥',due:today(),createdAt:new Date().toISOString(),...base}); persist(); render();
+}
+function exportJson(){
+  const blob=new Blob([JSON.stringify(tasks,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='凯迪外贸待办看板备份_'+today()+'.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+function importJson(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader(); reader.onload=()=>{ try{ const data=JSON.parse(reader.result); if(Array.isArray(data)){tasks=data; persist(); render(); alert('导入成功');} else alert('文件格式不对'); }catch(err){alert('导入失败：'+err.message);} };
+  reader.readAsText(file); e.target.value='';
+}
+function resetBoard(){ if(confirm('会恢复示例任务，并清空当前浏览器里的看板数据，确定吗？')){tasks=seedTasks; persist(); render();} }
+render();
+</script>
+</body>
+</html>
