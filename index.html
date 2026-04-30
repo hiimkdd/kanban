@@ -120,6 +120,17 @@
     .spanish-meaning { font-size: 15px; color: var(--ink); margin-top: 4px; font-weight: 600; }
     .spanish-pron { font-size: 13px; color: var(--muted); margin-top: 3px; }
     .spanish-date { font-size: 12px; color: var(--muted); background: rgba(255,255,255,.7); padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .spanish-words { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .spanish-word-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 8px;
+      padding: 3px 8px; font-size: 12px; cursor: default; position: relative;
+      transition: .15s;
+    }
+    .spanish-word-pill:hover { background: #ffcdd2; }
+    .spanish-word-pill .pill-es { font-weight: 700; color: #c62828; }
+    .spanish-word-pill .pill-en { color: #555; }
+    .spanish-word-pill .pill-dot { color: #ccc; font-size: 10px; }
     .scripts-section { margin: -4px 0 18px; }
     .scripts-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .scripts-head h3 { margin: 0; font-size: 16px; }
@@ -420,16 +431,45 @@ const spanishPhrases = [
   {phrase:'Saludos cordiales', meaning:'诚挚的问候（邮件结尾）', pron:'萨卢多斯 · 科尔迪亚莱斯'},
   {phrase:'Hasta pronto', meaning:'回头见', pron:'阿斯塔 · 普龙托'}
 ];
+const spanishWords = {
+  'buenos': '好的（复数）', 'días': '天/日', 'mucho': '非常', 'gusto': '高兴',
+  'cómo': '如何', 'está': '是（您）', 'gracias': '谢谢', 'por': '为了/因',
+  'su': '您的', 'tiempo': '时间', 'cuál': '哪个', 'es': '是',
+  'mejor': '更好的', 'precio': '价格', 'podemos': '我们可以',
+  'negociar': '谈判', 'el': '定冠词', 'la': '定冠词', 'de': '的',
+  'precio': '价格', 'fo b': '离岸价', 'qingdao': '青岛港',
+  'cuándo': '什么时候', 'puede': '可以', 'enviar': '发送/寄',
+  'muestra': '样品', 'tiene': '有', 'stock': '库存/现货',
+  'disponible': '可用的', 'calidad': '质量', 'muy': '非常',
+  'buena': '好的（阴性）', 'tiempo': '时间', 'entrega': '交货',
+  'somos': '我们是', 'fabricante': '厂家/制造商', 'confirmo': '我确认',
+  'pedido': '订单', 'espero': '我期待', 'respuesta': '回复',
+  'podría': '能否（礼貌）', 'darme': '给我', 'un': '一个',
+  'descuento': '折扣', 'pago': '付款', 'es': '是', 'por': '通过',
+  'carta': '信件', 'crédito': '信用证', 'especificación': '规格书',
+  'trabajemos': '让我们合作', 'juntos': '一起', 'saludos': '问候',
+  'cordiales': '诚挚的', 'hasta': '直到/再见', 'pronto': '很快'
+};
 function renderSpanish(){
   const d=new Date();
   const idx=d.getDate()%spanishPhrases.length;
   const s=spanishPhrases[idx];
+  // 清理标点后拆词
+  const clean = s.phrase.replace(/[¿?¡!.,;:]/g,'').trim();
+  const rawWords = clean.split(/\s+/);
+  const wordPills = rawWords.map(w => {
+    const key = w.toLowerCase().normalize('NFD')[0] === w ? w.toLowerCase() : w.toLowerCase();
+    const def = spanishWords[key] || '';
+    if(!def) return '';
+    return `<span class="spanish-word-pill"><span class="pill-es">${esc(w)}</span><span class="pill-dot">·</span><span class="pill-en">${esc(def)}</span></span>`;
+  }).filter(Boolean);
   document.getElementById('spanishBar').innerHTML=`
     <div class="spanish-flag">🇪🇸</div>
     <div class="spanish-body">
       <div class="spanish-phrase">${esc(s.phrase)}</div>
       <div class="spanish-meaning">${esc(s.meaning)}</div>
       <div class="spanish-pron">${esc(s.pron)}</div>
+      ${wordPills.length ? `<div class="spanish-words">${wordPills.join('')}</div>` : ''}
     </div>
     <div class="spanish-date">${d.getMonth()+1}月${d.getDate()}日 · 每日一句</div>
   `;
